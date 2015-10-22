@@ -1,0 +1,32 @@
+{
+  "name": "solarsource",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "dependencies": {
+    "body-parser": "~1.13.2",
+    "cookie-parser": "~1.3.5",
+    "debug": "~2.2.0",
+    "express": "~4.13.1",
+    "jade": "~1.11.0",
+    "mongoose": "^4.1.12",
+    "morgan": "~1.6.1",
+    "serve-favicon": "~2.3.0",
+    "superagent": "^1.4.0"
+  },
+  "description": "A framework to evaluate rooftop solar potential",
+  "main": "app.js",
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/G2-IW/backend-iw.git"
+  },
+  "author": "Graham Turk",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/G2-IW/backend-iw/issues"
+  },
+  "homepage": "https://github.com/G2-IW/backend-iw#readme"
+}
