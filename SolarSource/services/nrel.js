@@ -26,7 +26,7 @@ function getOpenPVSummaries(zip) {
         })
 }
 
-function getPVWatts(capacity, array_type, tilt_angle, azimuth_angle, lat, lon) {
+function getPVWatts(capacity, arrayType, tiltAngle, azimuthAngle, lat, lon) {
     request
         .get(endpoint + '/api/pvwatts5/v5.format')
         .query({
@@ -34,9 +34,9 @@ function getPVWatts(capacity, array_type, tilt_angle, azimuth_angle, lat, lon) {
             api_key: api_key,
             system_capacity: capacity,
             module_type: 0,
-            array_type: array_type,
-            tilt: tilt_angle,
-            azimuth: azimuth_angle,
+            array_type: arrayType,
+            tilt: tiltAngle,
+            azimuth: azimuthAngle,
             lat: lat,
             lon: lon
         })
