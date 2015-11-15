@@ -4,85 +4,204 @@
 
 var express = require('express');
 var router = express.Router();
+var NullDocumentError = require('../services/NullDocumentError');
 var Home = require('../models/home');
 var mongoose = require('mongoose');
-var HomeEnergyModel = require('../models/energy-model');
-var HomeRoofModel = require('../models/roof-model');
+var request = require('superagent-bluebird-promise');
 mongoose.Promise = require('bluebird');
 
+var ObjectId = mongoose.Types.ObjectId;
 
-router.use(function computeAddress(req, res, next) {
-    req.params.address = '36 University Place, Princeton, NJ 08544';
-    //req.params.address = maps.computeAddress(req.latitude, req.params.longitude);
-    next();
-});
+/**
+ * @apiDefine HomeNotFoundError
+ * @apiError HomeNotFound The <code>id</code> of the Home was not found.
+ * @apiErrorExample {json} Error-response:
+ *      HTTP/1.1 404 Not Found
+ *      {
+ *          "error": "HomeNotFound
+ *      }
+ */
 
-// GET /homes?address=2454-Frist-Center
+/**
+ * @api {get} /homes Request home information
+ * @apiName GetHome
+ * @apiGroup Home
+ *
+ * @apiParam {Number} lat Home address latitude
+ * @apiParam {Number} lon Home address longitude
+ *
+ * @apiSuccess (200) {Object} home A home object
+ *
+ * @apiUse HomeNotFoundError
+ *
+ * @apiExample {curl} Example usage:
+ *      curl -i http://localhost:8080/homes?lat=45.345&lon=64.981
+ */
+
 router.get('/', function(req, res, next) {
-    var promise = Home.findOne({address: req.params.address}).exec();
+    var promise = Home.findOne({lat: req.query.lat, lon: req.query.lon}).exec();
 
     promise.then(function(home) {
         if (home == null) {
-            throw new Error('Home does not exist');
+            throw new NullDocumentError('Home not found');
         } else {
-            res.status(200).json(home.formatHome());
+            res.status(200).json(home);
         }
-    }).catch(function(error) {
-        res.status(404).json({error: error.message});
-    });
+    }).catch(NullDocumentError, function(err) {
+        res.status(400).json({error: err.message});
+    }).catch(function(err) {
+        res.status(500).json({error: err.message});
+    })
 });
 
-// GET /homes/10
+/**
+ * @api {get} /homes/:id Request home information
+ * @apiName GetHomeId
+ * @apiGroup Home
+ *
+ * @apiParam {Number} id Home's unique database id
+ *
+ * @apiSuccess (200) {Object} home A home object
+ *
+ * @apiUse HomeNotFoundError
+ *
+ * @apiExample {curl} Example usage:
+ *      curl -i http://localhost:8080/homes/240302030400304
+ */
 router.get('/:id', function(req, res, next) {
-    var promise = Home.findOne({_id: req.params.id}).exec();
+    if (!ObjectId.isValid(req.params.id)) {
+        res.status(400).json({error: 'Invalid id'});
+        return;
+    }
+
+    var promise = Home.findById(req.params.id).exec();
 
     promise.then(function(home) {
         if (home == null) {
-            throw new Error('Home does not exist');
+            console.log('Inside null home');
+            throw new NullDocumentError('Home not found');
         } else {
-            res.status(200).json(home.formatHome());
+            res.status(200).json(home);
         }
-    }).catch(function(error) {
-        res.status(404).json({error: error.message});
-    });
+    }).catch(NullDocumentError, function(err) {
+        res.status(400).json({error: err.message});
+    }).catch(function(err) {
+        res.status(500).json({error: err.message});
+    })
 });
 
-// POST /homes
+/**
+ * @api {post} /homes Create a home
+ * @apiName createHome
+ * @apiGroup Home
+ *
+ * @apiParam {Number} lat Home address latitude
+ * @apiParam {Number} lon Home address longitude
+ * @apiParam {Object} energy Home energy profile (see below)
+ * @apiParam {Object} roof Home roof profile (see below)
+ *
+ * @apiSuccess (201) {Object} home The newly created home
+ *
+ * @apiError ServerError Home creation failed
+ *
+ * @apiParamExample {json} Request-Example:
+ *      {
+ *          "lat": 44.079,
+ *          "lon": -93.243,
+ *          "energy": {
+ *              "wattvision": {"units": "watts", "data": []}
+ *              "monthly": {
+ *                  "units": "kwh",
+ *                  "value": 1553
+ *              }
+ *          },
+ *          "roof": {
+ *              "tilt": 10,
+ *              "area": {
+ *                  "units": "sqft",
+ *                  "value": 100
+ *              },
+ *              "direction": 0,
+ *              "elevation": {
+ *                  "units": "ft",
+ *                  "value": 20
+ *              }
+ *          }
+ *      }
+ */
 router.post('/', function(req, res, next) {
 
-    var requiredParams = ['address', 'energy_score', 'roof_score'];
+    var requiredParams = ['lat', 'lon', 'energy', 'roof'];
 
-    for (var key in requiredParams) {
-        if (!req.body.hasOwnProperty(key)) {
+
+    var i = 0;
+    for (; i < requiredParams.length; i++) {
+        if (!req.body.hasOwnProperty(requiredParams[i])) {
             res.status(400).json({error: "Invalid request"});
             return;
         }
     }
 
-    // Create home energy and roof models
-    var homeEnergyModel = new HomeEnergyModel(req.body.energy_score);
-    var homeRoofModel = new HomeRoofModel(req.body.roof_score);
-
-    var home = new Home({
-        address: req.body.address,
-        energy_score: homeEnergyModel.getEnergyScore(),
-        roof_score: homeRoofModel.getRoofScore()
-    });
-
-    home.save().then(function(home) {
-        res.status(201).json(home.formatHome());
-    }).catch(function(error) {
-        res.status(500).json({error: 'Error saving home'});
+    /* Check if home is already in db */
+    var promise = Home.findOne({lat: req.body.lat, lon: req.body.lon}).exec();
+    promise.then(function (home) {
+        if (home == null) {
+            var newHome = new Home({
+                lat: req.body.lat,
+                lon: req.body.lon,
+                energy: req.body.energy,
+                roof: req.body.roof
+            });
+            return newHome.save();
+        } else {
+            /* throw new Error("Duplicate home attempted creation"); */
+            return home;
+        }
+    }).then(function(home) {
+        res.status(201).json(home);
+    }).catch(function(err) {
+        res.status(500).json({error: err.message});
     });
 });
 
-// PUT /homes/10
+/**
+ * @api {put} /homes/:id Updates a home
+ * @apiName updateHome
+ * @apiGroup Home
+ *
+ * @apiParam {Number} [lat] Home address latitude
+ * @apiParam {Number} [lon] Home address longitude
+ * @apiParam {Object} [energy] Home energy profile (see below)
+ * @apiParam {Object} [roof] Home roof profile (see below)
+ *
+ * @apiSuccess (200) {Object} home The updated home
+ *
+ * @apiError ServerError Home creation failed
+ *
+ * @apiParamExample {json} Request-Example:
+ *      {
+ *          "energy": {
+ *              "monthly": {
+ *                  "units": "kwh",
+ *                  "value": 2000
+ *              }
+ *          }
+ *      }
+ */
 router.put('/:id', function(req, res, next) {
-    var promise = Home.findOne({_id: req.params.id}).exec();
+    if (!ObjectId.isValid(req.params.id)) {
+        res.status(400).json({error: 'Invalid id'});
+        return;
+    }
 
-    var params = ['address', 'energy_score', 'roof_score'];
+    var promise = Home.findById(req.params.id).exec();
+
+    var params = ['lat', 'lon', 'energy', 'roof'];
 
     promise.then(function(home) {
+        if (home == null) {
+            throw new NullDocumentError('Home not found');
+        }
         for (var key in params) {
             if (req.body.hasOwnProperty(key)) {
                 home.key = req.body.key;
@@ -90,10 +209,40 @@ router.put('/:id', function(req, res, next) {
         }
         return home.save()
     }).then(function(updatedHome) {
-        res.status(200).json(updatedHome.formatHome());
+        res.status(200).json(updatedHome);
+
+    }).catch(NullDocumentError, function(err) {
+        res.status(400).json({error: error.message});
     }).catch(function(err) {
-        res.status(400).json({error: error});
+        res.status(500).json({error: error.message});
     });
+});
+
+/**
+ * @api {delete} /homes/:id Delete home from database
+ * @apiName DeleteHome
+ * @apiGroup Home
+ *
+ * @apiParam {Number} id Home's unique database id
+ *
+ * @apiSuccessExample {json} Success-Response:
+ *      HTTP/1.1 200 OK
+ *      {
+ *          "success": "Home deleted"
+ *      }
+ *
+ * @apiUse HomeNotFoundError
+ */
+router.delete('/:id', function(req, res, next) {
+    if (!ObjectId.isValid(req.params.id)) {
+        res.status(400).json({error: 'Invalid id'});
+        return;
+    }
+
+    Home.findByIdAndRemove(req.params.id, function(err) {
+        if (err) res.status(404).json({error: err.message});
+        else res.status(200).json({success: "Home deleted"});
+    })
 });
 
 
