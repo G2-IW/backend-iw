@@ -8,6 +8,9 @@ var bodyParser = require('body-parser');
 var routes = require('./routes/index');
 var users = require('./routes/users');
 var home = require('./routes/home');
+var rec = require('./routes/recommendation');
+
+var test = require('./test/sample-request');
 
 var mongoose = require('mongoose');
 var config = require('./config');
@@ -23,17 +26,26 @@ db.once('open', function (callback) {
 });
 
 // Create a sample home and add to the database
-var sampleHome = new Home({ address: '1 Kings Drive', energy_score: 5, roof_score: 10});
-sampleHome.save(function (err, createdHome) {
-    if (err) return console.error(err);
-    console.log(createdHome.formatHome());
+var sampleHome = new Home({
+    latitude: test.lat,
+    longitude: test.lon,
+    energy: test.energy,
+    roof: test.roof
 });
+
+/*
+sampleHome.save(function (err, createdHome) {
+    if (err) console.error(err);
+    else console.log(createdHome);
+});
+
 
 // Query db for all homes
 Home.find(function(err, homes) {
-    if (err) return console.error(err);
-    console.log(homes);
+    if (err) console.error(err);
+    else console.log(homes);
 });
+*/
 
 var app = express();
 
@@ -49,9 +61,14 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// For apidoc page
+app.use(express.static(path.join(__dirname, 'doc')));
+
+
 app.use('/', routes);
 app.use('/users', users);
 app.use('/homes', home);
+app.use('/recs', rec);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
