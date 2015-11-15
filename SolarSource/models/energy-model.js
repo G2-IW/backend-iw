@@ -10,14 +10,27 @@ var HomeEnergyModel = function(energyDict) {
     this.energyProfile = {};
     this.energyScore = -1;
 
-    if (this.energyDict.hasOwnProperty('wattvision')) {
+    this.energyProfile = {
+        wattvision: null,
+        monthlyConsumption: null,
+        monthlyCost: null,
+        useWattvision: null,
+        timeToPayofff: null,
+        paymentPerMonth: null,
+        systemCapacity: null
+    };
+
+    if (this.energyDict.hasOwnProperty('wattvision') && this.energyDict.useWattvision == true) {
         parseWattvision();
     } else {
-        parseMonthlyConsumption();
+        // TODO: change when profile is more complicated
+        this.energyProfile = energyDict;
+        this.energyProfile.systemCapacity = 4;
+        // parseMonthlyConsumption();
     }
 };
 
-function parseWattvision() {
+HomeEnergyModel.prototype.parseWattvision = function() {
 
     /*
         Wattvision HTTP request
@@ -33,9 +46,9 @@ function parseWattvision() {
     }
 
     generateConsumptionProfile(wattvisionData.data);
-}
+};
 
-function generateConsumptionProfile(data) {
+HomeEnergyModel.prototype.generateConsumptionProfile = function(data) {
 
     var totalWatts = 0;
     /*
@@ -53,16 +66,18 @@ function generateConsumptionProfile(data) {
     var avgKW = avgWatts * WATTS_TO_KW;
 
     this.energyProfile.totalConsumption = avgKW * timespanHR;
-}
+};
 
-function parseMonthlyConsumption() {
-    var monthly = this.energyDict.monthly;
-    this.energyProfile.units = monthly.units;
-    this.energyProfile.totalConsumption = monthly.value;
-}
+HomeEnergyModel.prototype.parseMonthlyConsumption = function() {
+    this.energyProfile.totalConsumption = this.energyDict.monthlyConsumption;
+};
 
-HomeEnergyModel.getEnergyScore = function() {
+HomeEnergyModel.prototype.getEnergyScore = function() {
     return this.energyScore;
+};
+
+HomeEnergyModel.prototype.getEnergyProfile = function() {
+    return this.energyProfile;
 };
 
 module.exports = HomeEnergyModel;

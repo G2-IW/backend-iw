@@ -9,10 +9,21 @@ var HomeRoofModel = function(roofDict) {
     this.roofProfile = {};
     this.roofScore = -1;
 
-    parseRoof();
+    this.roofProfile = {
+        tilt: null,
+        area: null,
+        direction: null,
+        elevation: null,
+        arrayType: null
+    };
+
+    // TODO: change when roof is more sophisticated
+    //parseRoof();
+    this.roofProfile = roofDict;
+    this.roofProfile.arrayType = 0;
 };
 
-function parseRoof() {
+HomeRoofModel.prototype.parseRoof = function() {
     for (var key in this.roofDict) {
         if (typeof this.roofDict.key == 'object' && this.roofDict.key.hasOwnProperty('units')) {
             this.roofProfile.key = helper.convertUnits(this.roofDict.key.units, this.roofDict.key.value);
@@ -20,10 +31,14 @@ function parseRoof() {
             this.roofProfile.key = this.roofDict.key;
         }
     }
-}
+};
 
 HomeRoofModel.prototype.getRoofScore = function() {
     return this.roofScore;
+};
+
+HomeRoofModel.prototype.getRoofProfile = function() {
+    return this.roofProfile;
 };
 
 module.exports = HomeRoofModel;
