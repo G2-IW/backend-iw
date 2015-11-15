@@ -10,3 +10,13 @@ module.exports.nrel = {
 module.exports.mongodb = {
     server_path: "mongodb://localhost/test"
 };
+
+module.exports.flags = {
+    // ["wattvision", "monthly"]
+    energy: "monthly",
+    peak: 200,
+    average: 100,
+    startFromCapacity: false,
+    threshold: .05,
+    inflation: 1.05
+};
