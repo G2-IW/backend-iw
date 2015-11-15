@@ -6,6 +6,7 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
+    "apidoc": "^0.13.1",
     "bluebird": "^2.10.2",
     "body-parser": "~1.13.2",
     "convert-units": "^0.1.1",
@@ -18,7 +19,8 @@
     "morgan": "~1.6.1",
     "node-geocoder": "^3.4.1",
     "serve-favicon": "~2.3.0",
-    "superagent": "^1.4.0"
+    "superagent": "^1.4.0",
+    "superagent-bluebird-promise": "^2.1.0"
   },
   "description": "A framework to evaluate rooftop solar potential",
   "main": "app.js",
@@ -32,5 +34,11 @@
   "bugs": {
     "url": "https://github.com/G2-IW/backend-iw/issues"
   },
-  "homepage": "https://github.com/G2-IW/backend-iw#readme"
+  "homepage": "https://github.com/G2-IW/backend-iw#readme",
+  "apidoc": {
+    "name": "example",
+    "version": "0.1.0",
+    "description": "A basic apiDoc example",
+    "url": "http://localhost:3000"
+  }
 }
