@@ -9,6 +9,7 @@ var routes = require('./routes/index');
 var users = require('./routes/users');
 var home = require('./routes/home');
 var rec = require('./routes/recommendation');
+var enphase = require('./routes/enphase');
 
 var test = require('./test/sample-request');
 
@@ -69,6 +70,7 @@ app.use('/', routes);
 app.use('/users', users);
 app.use('/homes', home);
 app.use('/recs', rec);
+app.use('/enphase', enphase);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
