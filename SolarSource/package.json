@@ -20,7 +20,8 @@
     "node-geocoder": "^3.4.1",
     "serve-favicon": "~2.3.0",
     "superagent": "^1.4.0",
-    "superagent-bluebird-promise": "^2.1.0"
+    "superagent-bluebird-promise": "^2.1.0",
+    "underscore": "^1.8.3"
   },
   "description": "A framework to evaluate rooftop solar potential",
   "main": "app.js",
@@ -36,9 +37,9 @@
   },
   "homepage": "https://github.com/G2-IW/backend-iw#readme",
   "apidoc": {
-    "name": "example",
-    "version": "0.1.0",
-    "description": "A basic apiDoc example",
+    "name": "SolarSource",
+    "version": "0.0.0",
+    "description": "A framework for evaluating home solar potential",
     "url": "http://localhost:3000"
   }
 }
