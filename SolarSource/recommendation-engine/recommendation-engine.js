@@ -10,7 +10,8 @@ var MONTHS_IN_YEAR = 12;
 var DAYS_IN_MONTH = 30;
 
 
-var RecommendationEngine = function(home, solarLandscape, solarResourceData, solarPerformance, utilityRates, energyProfile, roofProfile) {
+var RecommendationEngine = function(home, solarLandscape, solarResourceData, solarPerformance, utilityRates,
+                                    pvdaqMetadata, energyProfile, roofProfile) {
     this.home = home;
 
     this.recommendation = {};
@@ -18,6 +19,7 @@ var RecommendationEngine = function(home, solarLandscape, solarResourceData, sol
     this.solarResourceData = solarResourceData;
     this.solarPerformance = solarPerformance;
     this.utilityRates = utilityRates;
+    this.pvdaqMetadata = pvdaqMetadata;
 
     this.energyProfile = energyProfile;
     this.roofProfile = roofProfile;
@@ -104,19 +106,22 @@ RecommendationEngine.prototype.calculateArrayCost = function(arrayCapacity) {
 RecommendationEngine.prototype.doCostCalculation = function(arrayCost) {
     this.recommendation.timetoPayOff = arrayCost / this.energyProfile.paymentPerMonth;
 
-    var monthlyBill = this.roofProfile.hasOwnProperty('monthlyConsumption') ?
+    // TODO: add APR to calculation
+
+    var monthlyBill = this.energyProfile.hasOwnProperty('monthlyCost') ?
                     this.energyProfile.monthlyCost : this.energyProfile.monthlyConsumption * this.utilityRates.residential;
     var tenYearUtilityCost = this.calculateFutureCost(10, monthlyBill);
     var twentyYearUtilityCost = this.calculateFutureCost(20, monthlyBill);
 
-    this.recommendation.tenYearSavings =  arrayCost - tenYearUtilityCost;
+    this.recommendation.tenYearSavings = tenYearUtilityCost - arrayCost;
 
-    this.recommendation.twentyYearSavings = arrayCost - twentyYearUtilityCost;
+    // this.recommendation.twentyYearSavings = twentyYearUtilityCost - arrayCost;
 };
 
 // timespan in years
+// TODO: build in more sophisticated future assessment
 RecommendationEngine.prototype.calculateFutureCost = function(timespan, monthlyBill) {
-    return monthlyBill * config.flags.inflation * timespan * MONTHS_IN_YEAR;
+    return monthlyBill * Math.pow(config.flags.inflation, timespan) * timespan * MONTHS_IN_YEAR;
 };
 
 RecommendationEngine.prototype.getRecommendation = function() {
