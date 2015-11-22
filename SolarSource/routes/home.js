@@ -7,7 +7,6 @@ var router = express.Router();
 var NullDocumentError = require('../services/NullDocumentError');
 var Home = require('../models/home');
 var mongoose = require('mongoose');
-var request = require('superagent-bluebird-promise');
 mongoose.Promise = require('bluebird');
 
 var ObjectId = mongoose.Types.ObjectId;
@@ -109,11 +108,22 @@ router.get('/:id', function(req, res, next) {
  *          "lat": 44.079,
  *          "lon": -93.243,
  *          "energy": {
- *              "wattvision": {"units": "watts", "data": []}
- *              "monthly": {
- *                  "units": "kwh",
- *                  "value": 1553
- *              }
+ *              "wattvision": {
+ *                  "sensor_id" 0,
+ *                  "api_key": 0,
+ *                  "api_id": 0,
+ *                  "type": "rate",
+ *                  "start_time": "2013-01-18T21:50:00",
+ *                  "end_time": "2013-01-18T22:57:00"
+ *              },
+ *              "monthlyConsumption": 1553,
+ *              "monthlyCost": 100,
+ *              "useWattvision": false,
+ *              "timeToPayofff": {
+ *                  "units": "years",
+ *                  "value": "10"
+ *              },
+ *              "paymentPerMonth": 100
  *          },
  *          "roof": {
  *              "tilt": 10,
@@ -133,11 +143,10 @@ router.post('/', function(req, res, next) {
 
     var requiredParams = ['lat', 'lon', 'energy', 'roof'];
 
-
     var i = 0;
     for (; i < requiredParams.length; i++) {
         if (!req.body.hasOwnProperty(requiredParams[i])) {
-            res.status(400).json({error: "Invalid request"});
+            res.status(400).json({error: 'Invalid request'});
             return;
         }
     }
@@ -154,7 +163,7 @@ router.post('/', function(req, res, next) {
             });
             return newHome.save();
         } else {
-            /* throw new Error("Duplicate home attempted creation"); */
+            /* throw new Error('Duplicate home attempted creation'); */
             return home;
         }
     }).then(function(home) {
@@ -164,15 +173,22 @@ router.post('/', function(req, res, next) {
     });
 });
 
+
+// TODO: post method for when just want to upload performance
+
+
 /**
  * @api {put} /homes/:id Updates a home
  * @apiName updateHome
  * @apiGroup Home
  *
+ * @apiDescription: All fields are optional
+ *
  * @apiParam {Number} [lat] Home address latitude
  * @apiParam {Number} [lon] Home address longitude
  * @apiParam {Object} [energy] Home energy profile (see below)
  * @apiParam {Object} [roof] Home roof profile (see below)
+ * @apiParam {Object} [performance] Performance of existing solar array
  *
  * @apiSuccess (200) {Object} home The updated home
  *
@@ -196,7 +212,7 @@ router.put('/:id', function(req, res, next) {
 
     var promise = Home.findById(req.params.id).exec();
 
-    var params = ['lat', 'lon', 'energy', 'roof'];
+    var params = ['lat', 'lon', 'energy', 'roof', 'performance'];
 
     promise.then(function(home) {
         if (home == null) {

@@ -10,6 +10,7 @@ var express = require('express'),
 
 var helper = require('../services/handle-units');
 var nrel = require('../services/nrel');
+var wattvision = require('../services/wattvision');
 var HomeEnergyModel = require('../models/energy-model');
 var HomeRoofModel = require('../models/roof-model');
 
@@ -20,9 +21,49 @@ mongoose.Promise = require('bluebird');
 // recommendation engine object
 var recommendationEngine;
 
-
 var ObjectId = mongoose.Types.ObjectId;
 
+
+/**
+ * @api {get} /recs/:id Request recommendation for home
+ * @apiName GetRec
+ * @apiGroup Recommendation
+ *
+ * @apiDescription This method can only be called for a home
+ *  that has been created with a successful POST /homes request.
+ *  Returned object has the fields described below.
+ *
+ *
+ * @apiParam {Number} id Home's unique database id
+ *
+ * @apiSuccess {Boolean} exceedsMaxSize Does 100% coverage exceed the maximum roof area?
+ * @apiSuccess {Number} arraySize Size of the array (squared meters)
+ * @apiSuccess {Number} arrayCapacity Peak power output of total array (watts)
+ * @apiSuccess {Number} arrayCost Full upfront cost of array
+ * @apiSuccess {Number} timeToPayOff Number of months to pay off array in full based on user-specified monthly payment
+ * @apiSuccess {Number} tenYearSavings Savings in dollars after 10 years of array use
+ * @apiSuccess {Number} twentyYearSavings Savings in dollars after 20 years of array use
+ *
+ *
+ * @apiSuccessExample {json} Success-Response:
+ *     HTTP/1.1 200 OK
+ *     {
+ *       "exceedsMaxSize": "true",
+ *       "arraySize": "20",
+ *       "arrayCapacity": "5000",
+ *       "arrayCost": "15000",
+ *       "timeToPayOff": "60",
+ *       "tenYearSavings": "2000",
+ *       "twentyYearSavings": "5000"
+ *     }
+ *
+ * @apiUse HomeNotFoundError
+ *
+ * @apiExample {curl} Example usage:
+ *      curl -i http://localhost:8080/recs/240302030400304
+ *
+ *
+ */
 router.get('/:id', function(req, res, next) {
 
     if (!ObjectId.isValid(req.params.id)) {
@@ -40,8 +81,18 @@ router.get('/:id', function(req, res, next) {
 
         this.home = home;
 
-        this.homeEnergyModel = new HomeEnergyModel(home.energy);
-        this.homeRoofModel = new HomeRoofModel(home.roof);
+        /*
+        var wattvision = home.energy.wattvision;
+
+        return wattvision.getWattvisionData(wattvision.sensor_id, wattvision.api_id, wattvision.api_key,
+            wattvision.type, wattvision.start_time, wattvision.end_time);
+
+    }).then(function (wattvisionData) {
+
+        */
+
+        this.homeEnergyModel = new HomeEnergyModel(this.home.energy, home.energy.wattvisionSampleData);
+        this.homeRoofModel = new HomeRoofModel(this.home.roof);
 
         this.roofProfile = this.homeRoofModel.getRoofProfile();
         this.energyProfile = this.homeEnergyModel.getEnergyProfile();
@@ -63,15 +114,43 @@ router.get('/:id', function(req, res, next) {
 
     }).then(function(summaries) {
 
+        if (summaries.body.result.avg_cost_pw == null) {
+            return nrel.getSummariesDefault();
+        }
+        // TODO: figure out if need promise here
+        return summaries;
+
+    }).then(function(summaries) {
         this.solarLandscape = summaries.body.result;
         return nrel.getUtilityRates(this.home.lat, this.home.lon);
 
     }).then(function(rates) {
         this.utilityRates = rates.body.outputs;
 
+        /*
+        return nrel.getPVDAQMetadata();
+    }).then(function (pvdaqMetadata) {
+        this.pvdaqMetadata = pvdaqMetadata.body.outputs;
+        */
+
+        // TODO: remove this
+        this.pvdaqMetadata = {};
+
         recommendationEngine = new RecommendationEngine(this.home, this.solarLandscape, this.solarResourceData,
-            this.solarPerformance, this.utilityRates, this.energyProfile, this.roofProfile);
-        res.status(200).json(recommendationEngine.getRecommendation());
+            this.solarPerformance, this.utilityRates, this.pvdaqMetadata, this.energyProfile, this.roofProfile);
+
+        this.recommendation = recommendationEngine.getRecommendation();
+        for (var key in this.recommendation) {
+            if (this.recommendation.hasOwnProperty(key) &&
+                this.home.recommendation.hasOwnProperty(key)) {
+                this.home.recommendation.key = this.recommendation.key;
+            }
+        }
+
+        return this.home.save();
+
+    }).then(function(savedHome) {
+        res.status(200).json(this.recommendation);
 
     }).catch(NullDocumentError, function(err) {
         res.status(400).json({error: err.message});
