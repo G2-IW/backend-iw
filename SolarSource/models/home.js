@@ -7,14 +7,13 @@ var mongoose = require('mongoose');
 
 
 var recommendationSchema = mongoose.Schema({
-    area: {
-        units: String,
-        value: Number
-    },
-    power_output: {
-        units: String,
-        value: Number
-    }
+    arraySize: Number,
+    exceedsMaxSize: Boolean,
+    arrayCapacity: Number,
+    arrayCost: Number,
+    timeToPayOff: Number,
+    tenYearSavings: Number,
+    twentyYearSavings: Number
 });
 
 
@@ -24,9 +23,15 @@ var homeSchema = mongoose.Schema({
     energy: {},
     roof: {},
     recommendation: {
-        type: mongoose.Schema.ObjectId,
-        ref: 'recommendationSchema'
-    }
+        arraySize: Number,
+        exceedsMaxSize: Boolean,
+        arrayCapacity: Number,
+        arrayCost: Number,
+        timeToPayOff: Number,
+        tenYearSavings: Number,
+        twentyYearSavings: Number
+    },
+    performance: {}
 });
 
 
