@@ -5,7 +5,7 @@
 var MS_TO_HR = 1 / (1000 * 60);
 var WATTS_TO_KW = 1 / 1000;
 
-var HomeEnergyModel = function(energyDict) {
+var HomeEnergyModel = function(energyDict, wattvisionData) {
     this.energyDict = energyDict;
     this.energyProfile = {};
     this.energyScore = -1;
@@ -21,10 +21,14 @@ var HomeEnergyModel = function(energyDict) {
     };
 
     if (this.energyDict.hasOwnProperty('wattvision') && this.energyDict.useWattvision == true) {
-        parseWattvision();
+        // this.parseWattvision();
     } else {
         // TODO: change when profile is more complicated
         this.energyProfile = energyDict;
+
+        // Set it to the returned Wattvision data
+        this.energyProfile.wattvision = wattvisionData;
+
         this.energyProfile.systemCapacity = 4;
         // parseMonthlyConsumption();
     }
@@ -38,6 +42,8 @@ HomeEnergyModel.prototype.parseWattvision = function() {
         GET: https://www.wattvision.com/api/v0.2/elec?sensor_id=###&api_id=###&api_key=###&type=rate
         &start_time=2013-01-18T21:50:00&end_time=2013-01-18T22:57:00
      */
+
+
 
     // Parse Wattvision data
     var wattvisionData = this.energyDict.wattvision;
