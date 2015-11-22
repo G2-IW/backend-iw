@@ -1,0 +1,1 @@
+define({  "name": "SolarSource",  "version": "0.0.0",  "description": "A framework for evaluating home solar potential",  "url": "http://localhost:3000",  "sampleUrl": false,  "apidoc": "0.2.0",  "generator": {    "name": "apidoc",    "time": "2015-11-22T19:42:09.524Z",    "url": "http://apidocjs.com",    "version": "0.13.1"  }});
