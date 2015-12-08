@@ -54,6 +54,9 @@ var app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
+// Comment out when in prod
+// app.set('env', 'development');
+
 // uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(logger('dev'));
@@ -65,12 +68,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // For apidoc page
 app.use(express.static(path.join(__dirname, 'doc')));
 
-
 app.use('/', routes);
-app.use('/users', users);
-app.use('/homes', home);
-app.use('/recs', rec);
-app.use('/enphase', enphase);
+app.use('/api/users', users);
+app.use('/api/homes', home);
+app.use('/api/recs', rec);
+app.use('/api/enphase', enphase);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

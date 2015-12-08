@@ -135,3 +135,5 @@ router.put('/:user_id', function(req, res, next) {
     });
 
 });
+
+module.exports = router;
