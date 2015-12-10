@@ -22,7 +22,7 @@ var ObjectId = mongoose.Types.ObjectId;
  */
 
 /**
- * @api {get} /homes Request home information
+ * @api {get} /api/homes Request home information
  * @apiName GetHome
  * @apiGroup Home
  *
@@ -54,7 +54,7 @@ router.get('/', function(req, res, next) {
 });
 
 /**
- * @api {get} /homes/:id Request home information
+ * @api {get} /api/homes/:id Request home information
  * @apiName GetHomeId
  * @apiGroup Home
  *
@@ -90,7 +90,7 @@ router.get('/:id', function(req, res, next) {
 });
 
 /**
- * @api {post} /homes Create a home
+ * @api {post} /api/homes Create a home
  * @apiName createHome
  * @apiGroup Home
  *
@@ -174,16 +174,14 @@ router.post('/', function(req, res, next) {
 });
 
 
-// TODO: post method for when just want to upload performance
-
-
 /**
- * @api {put} /homes/:id Updates a home
+ * @api {put} /api/homes/:id Updates a home
  * @apiName updateHome
  * @apiGroup Home
  *
  * @apiDescription: All fields are optional
  *
+ * @apiParam {Number} id Home's unique database id
  * @apiParam {Number} [lat] Home address latitude
  * @apiParam {Number} [lon] Home address longitude
  * @apiParam {Object} [energy] Home energy profile (see below)
@@ -192,7 +190,7 @@ router.post('/', function(req, res, next) {
  *
  * @apiSuccess (200) {Object} home The updated home
  *
- * @apiError ServerError Home creation failed
+ * @apiError ServerError Home update failed
  *
  * @apiParamExample {json} Request-Example:
  *      {
@@ -235,7 +233,7 @@ router.put('/:id', function(req, res, next) {
 });
 
 /**
- * @api {delete} /homes/:id Delete home from database
+ * @api {delete} /api/homes/:id Delete home from database
  * @apiName DeleteHome
  * @apiGroup Home
  *
@@ -260,6 +258,59 @@ router.delete('/:id', function(req, res, next) {
         else res.status(200).json({success: "Home deleted"});
     })
 });
+
+
+/**
+ * @api {get} /api/homes/wattvision/:id Send Wattvision monitoring data
+ * @apiName SendWattvision
+ * @apiGroup Home
+ *
+ * @apiDescription: All fields are required. Wattvision values can be found on API settings page.
+ *
+ * @apiParam {Number} id Home's unique database id
+ * @apiParam {Number} apiKey Wattvision API key
+ * @apiParam {Number} apiID Wattvision API ID
+ * @apiParam {Number} sensorID Wattvision system ID
+ *
+ * @apiSuccess (200) {Object} home The updated home
+ *
+ * @apiError ServerError Request failed
+ *
+ * @apiExample {curl} Example usage:
+ *      curl -i http://localhost:8080/homes/wattvision/1323454934?sensorID=513&apiKey=24as78390$&apiID=453sjfk5
+ *
+ *
+ */
+router.get('/wattvision/:id', function(req, res, next) {
+    if (!ObjectId.isValid(req.params.id)) {
+        res.status(400).json({error: 'Invalid id'});
+        return;
+    }
+
+    var promise = Home.findById(req.params.id).exec();
+
+    var params = ['sensorID, apiID, apiKey'];
+
+    promise.then(function(home) {
+        if (home == null) {
+            throw new NullDocumentError('Home not found');
+        }
+        for (var key in params) {
+            if (req.query.hasOwnProperty(key)) {
+                home.energy.wattvision.key = req.query.key;
+            }
+        }
+        return home.save()
+    }).then(function(updatedHome) {
+        res.status(200).json(updatedHome);
+
+    }).catch(NullDocumentError, function(err) {
+        res.status(400).json({error: error.message});
+    }).catch(function(err) {
+        res.status(500).json({error: error.message});
+    });
+});
+
 
 
 module.exports = router;
