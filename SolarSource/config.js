@@ -9,12 +9,13 @@ module.exports.nrel = {
     api_key: 'gCScRN5rrK50DE2xoZcLpSoyFX3Nm1U2b0e6zVap',
     pvdaq: {
         username: 'gturk',
-        password: 'y5a24Nj9hb7h63fXt'
+        password: 'y5a24Nj9hb7h63fXt',
+        siteIds: [1234, 1236]
     }
 };
 
 module.exports.mongodb = {
-    server_path: 'mongodb://localhost/test'
+    server_path: 'mongodb://127.0.0.1:27017/prod'
 };
 
 module.exports.flags = {
@@ -37,5 +38,6 @@ module.exports.enphase = {
 };
 
 module.exports.wattvision = {
-    endpoint_prefix: 'https://www.wattvision.com/api/v0.2/elec'
+    endpoint_prefix: 'https://www.wattvision.com/api/v0.2/elec',
+    type: 'rate'
 };
