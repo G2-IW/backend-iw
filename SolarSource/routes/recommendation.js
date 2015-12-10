@@ -6,8 +6,10 @@ var express = require('express'),
     router = express.Router(),
     NullDocumentError = require('../services/NullDocumentError'),
     RecommendationEngine = require('../recommendation-engine/recommendation-engine'),
-    mongoose = require('mongoose');
+    mongoose = require('mongoose'),
+    _ = require('underscore');
 
+var config = require('../config');
 var helper = require('../services/handle-units');
 var nrel = require('../services/nrel');
 var wattvision = require('../services/wattvision');
@@ -15,6 +17,8 @@ var HomeEnergyModel = require('../models/energy-model');
 var HomeRoofModel = require('../models/roof-model');
 
 var Home = require('../models/home');
+
+var bluebird = require('bluebird');
 
 mongoose.Promise = require('bluebird');
 
@@ -81,17 +85,19 @@ router.get('/:id', function(req, res, next) {
 
         this.home = home;
 
-        /*
-        var wattvision = home.energy.wattvision;
+        if (home.energy.useWattvision) {
+            var wattvision = home.energy.wattvision;
 
-        return wattvision.getWattvisionData(wattvision.sensor_id, wattvision.api_id, wattvision.api_key,
-            wattvision.type, wattvision.start_time, wattvision.end_time);
+            return wattvision.getWattvisionData(wattvision.sensor_id, wattvision.api_id, wattvision.api_key,
+                config.wattvision.type, wattvision.start_time, wattvision.end_time);
+        }
+
+        return bluebird.resolve(null);
 
     }).then(function (wattvisionData) {
 
-        */
-
-        this.homeEnergyModel = new HomeEnergyModel(this.home.energy, home.energy.wattvisionSampleData);
+        // wattvision data may be null
+        this.homeEnergyModel = new HomeEnergyModel(this.home.energy, wattvisionData.data);
         this.homeRoofModel = new HomeRoofModel(this.home.roof);
 
         this.roofProfile = this.homeRoofModel.getRoofProfile();
@@ -126,18 +132,32 @@ router.get('/:id', function(req, res, next) {
 
     }).then(function(rates) {
         this.utilityRates = rates.body.outputs;
-
-        /*
         return nrel.getPVDAQMetadata();
-    }).then(function (pvdaqMetadata) {
-        this.pvdaqMetadata = pvdaqMetadata.body.outputs;
-        */
 
-        // TODO: remove this
-        this.pvdaqMetadata = {};
+    }).then(function (pvdaqMetadata) {
+
+        var filteredOutputs = _.filter(pvdaqMetadata.body.outputs, function (site) {
+            return site.system_id == config.nrel.pvdaq.siteIds[0] ||
+                site.system_id == config.nrel.pvdaq.siteIds[1]
+        });
+
+        this.pvdaqMetadata = filteredOutputs;
+
+        this.pvdaqSiteData = [];
+        return nrel.getPVDAQSiteData(config.nrel.pvdaq.siteIds[0]);
+
+    }).then(function(pvdaqSiteData) {
+        var dataEntries = _.size(pvdaqSiteData.body.outputs);
+        this.pvdaqSiteData[0] = pvdaqSiteData.body.outputs.slice(1, dataEntries - 1);
+
+        return nrel.getPVDAQSiteData(config.nrel.pvdaq.siteIds[1]);
+
+    }).then(function(pvdaqSiteData) {
+        var dataEntries = _.size(pvdaqSiteData.body.outputs);
+        this.pvdaqSiteData[1] = pvdaqSiteData.body.outputs.slice(1, dataEntries - 1);
 
         recommendationEngine = new RecommendationEngine(this.home, this.solarLandscape, this.solarResourceData,
-            this.solarPerformance, this.utilityRates, this.pvdaqMetadata, this.energyProfile, this.roofProfile);
+            this.solarPerformance, this.utilityRates, this.pvdaqMetadata, this.pvdaqSiteData, this.energyProfile, this.roofProfile);
 
         this.recommendation = recommendationEngine.getRecommendation();
         for (var key in this.recommendation) {
