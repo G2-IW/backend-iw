@@ -3,15 +3,17 @@
  */
 
 // var promise = require('bluebird');
+
 var helper = require('../services/handle-units');
 var config = require('../config');
+var _ = require('underscore');
 
 var MONTHS_IN_YEAR = 12;
 var DAYS_IN_MONTH = 30;
 
 
 var RecommendationEngine = function(home, solarLandscape, solarResourceData, solarPerformance, utilityRates,
-                                    pvdaqMetadata, energyProfile, roofProfile) {
+                                    pvdaqMetadata, pvdaqSiteData, energyProfile, roofProfile) {
     this.home = home;
 
     this.recommendation = {};
@@ -20,6 +22,7 @@ var RecommendationEngine = function(home, solarLandscape, solarResourceData, sol
     this.solarPerformance = solarPerformance;
     this.utilityRates = utilityRates;
     this.pvdaqMetadata = pvdaqMetadata;
+    this.pvdaqSiteData = pvdaqSiteData;
 
     this.energyProfile = energyProfile;
     this.roofProfile = roofProfile;
@@ -30,11 +33,7 @@ var RecommendationEngine = function(home, solarLandscape, solarResourceData, sol
 
 
     var arraySize;
-    if (config.flags.energy == "wattvision") {
-        arraySize = this.calculateArraySizeWattvision();
-    } else if (config.flags.energy == "monthly") {
-        arraySize = this.calculateArraySizeMonthly();
-    }
+    arraySize = this.calculateArraySizeMonthly();
 
     var arrayCapacity = this.calculateArrayCapacity(arraySize);
     var arrayCost = this.calculateArrayCost(arrayCapacity);
@@ -58,13 +57,21 @@ var RecommendationEngine = function(home, solarLandscape, solarResourceData, sol
     */
 };
 
+function computeAveragePower(pvdaqSites) {
+    var size = _.size(pvdaqSites);
+    var powerPerAreas = 0;
+    _.each(pvdaqSites, function(site) {
+        powerPerAreas += site.site_power / site.site_area;
+    });
+    return powerPerAreas / size;
+}
+
 RecommendationEngine.prototype.getRecommendation = function() {
     return this.recommendation;
 };
 
 /* Separate methods for these calculations in case they
    become more complicated */
-// TODO: build support for units other than kwh
 RecommendationEngine.prototype.calculateArraySizeMonthly = function() {
     var totalConsumption = this.energyProfile.monthlyConsumption;
 
@@ -85,14 +92,9 @@ RecommendationEngine.prototype.calculateArraySizeMonthly = function() {
     return arraySize;
 };
 
-// TODO: write this method
-RecommendationEngine.prototype.calculateArraySizeWattvision = function() {
-    return 10;
-};
-
 RecommendationEngine.prototype.calculateArrayCapacity = function(arraySize) {
     // TODO: differentiate between peak and average
-    var arrayCapacity = arraySize * (config.flags.peak);
+    var arrayCapacity = arraySize * computeAveragePower(this.pvdaqMetadata);
     this.recommendation.arrayCapacity = arrayCapacity;
     return arrayCapacity;
 };
