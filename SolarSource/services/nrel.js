@@ -3,7 +3,6 @@
  */
 
 var config = require('../config');
-var plainRequest = require('superagent');
 var request = require('superagent-bluebird-promise');
 
 var endpoint = config.nrel.endpoint_prefix;
@@ -71,28 +70,26 @@ function getUtilityRates(lat, lon) {
         .promise();
 }
 
-// TODO: delete this method
-function getResourceNoPromise(lat, lon) {
-    plainRequest.get(endpoint + '/api/solar/solar_resource/v1.json')
-        .query({
-            api_key: api_key,
-            lat: lat,
-            lon: lon
-        })
-        .accept('json')
-        .end(function(err, res) {
-            if (err)
-                console.log(err);
-            else
-                console.log(res.body.outputs);
-        });
-}
-
 function getPVDAQMetadata() {
+    // returns metadata for all PVDAQ sites
     return request.get(endpoint + '/api/pvdaq/v3/sites.json')
-        .auth(config.nrel.pvdaq.username, config.nrel.pvdaq.username)
+        .auth(config.nrel.pvdaq.username, config.nrel.pvdaq.password)
         .query({
             api_key: api_key
+        })
+        .accept('json')
+        .promise();
+}
+
+function getPVDAQSiteData(system_id) {
+    return request.get(endpoint + '/api/pvdaq/v3/site_data.format')
+        .auth(config.nrel.pvdaq.username, config.nrel.pvdaq.password)
+        .query({
+            api_key: api_key,
+            aggregate: 'monthly',
+            system_id: system_id,
+            start_date: '1/1/2015',
+            end_date: '12/1/2015'
         })
         .accept('json')
         .promise();
@@ -105,3 +102,4 @@ module.exports.getSolarResourceData = getSolarResouceData;
 module.exports.getUtilityRates = getUtilityRates;
 module.exports.getResourceNoPromise = getResourceNoPromise;
 module.exports.getPVDAQMetadata = getPVDAQMetadata;
+module.exports.getPVDAQSiteData = getPVDAQSiteData;
