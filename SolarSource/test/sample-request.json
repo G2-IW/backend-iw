@@ -6,10 +6,7 @@
     "wattvision": {
       "sensor_id": 0,
       "api_key": 0,
-      "api_id": 0,
-      "type": "rate",
-      "start_time": "2013-01-18T21:50:00",
-      "end_time": "2013-01-18T22:57:00"
+      "api_id": 0
     },
     "monthlyConsumption": 1553,
     "monthlyCost": 100,
