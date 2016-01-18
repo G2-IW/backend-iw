@@ -3,6 +3,7 @@
  */
 
 var helper = require('../services/handle-units');
+var config = require('../config');
 
 var HomeRoofModel = function(roofDict) {
     this.roofDict = roofDict;
@@ -11,7 +12,7 @@ var HomeRoofModel = function(roofDict) {
 
     this.roofProfile = {
         tilt: null,
-        area: null,
+        usableArea: null,
         direction: null,
         elevation: null,
         arrayType: null
@@ -20,16 +21,18 @@ var HomeRoofModel = function(roofDict) {
     // TODO: change when roof is more sophisticated
     //parseRoof();
     this.roofProfile = roofDict;
-    this.roofProfile.arrayType = 0;
+    this.roofProfile.arrayType = config.nrel.arrayType;
 };
 
 HomeRoofModel.prototype.parseRoof = function() {
     for (var key in this.roofDict) {
-        if (typeof this.roofDict.key == 'object' && this.roofDict.key.hasOwnProperty('units')) {
+        /* if (typeof this.roofDict.key == 'object' && this.roofDict.key.hasOwnProperty('units')) {
             this.roofProfile.key = helper.convertUnits(this.roofDict.key.units, this.roofDict.key.value);
         } else {
             this.roofProfile.key = this.roofDict.key;
         }
+        */
+        this.roofProfile.key = this.roofDict.key;
     }
 };
 

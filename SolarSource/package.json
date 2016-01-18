@@ -39,7 +39,7 @@
   "apidoc": {
     "name": "SolarSource",
     "version": "0.0.0",
-    "description": "A framework for evaluating home solar potential",
-    "url": "http://localhost:3000"
+    "description": "A general framework for evaluating home solar potential",
+    "url": "http://52.90.251.70"
   }
 }

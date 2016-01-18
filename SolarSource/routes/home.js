@@ -67,27 +67,37 @@ router.get('/', function(req, res, next) {
  * @apiExample {curl} Example usage:
  *      curl -i http://localhost:8080/homes/240302030400304
  */
+
+
+
 router.get('/:id', function(req, res, next) {
+
+    // Validate query parameter
     if (!ObjectId.isValid(req.params.id)) {
         res.status(400).json({error: 'Invalid id'});
         return;
     }
 
+    // Query for home in database
     var promise = Home.findById(req.params.id).exec();
 
     promise.then(function(home) {
         if (home == null) {
-            console.log('Inside null home');
             throw new NullDocumentError('Home not found');
         } else {
+            // Return the home
             res.status(200).json(home);
         }
     }).catch(NullDocumentError, function(err) {
+        // Home not found
         res.status(400).json({error: err.message});
     }).catch(function(err) {
+        // Internal server error
         res.status(500).json({error: err.message});
     })
 });
+
+
 
 /**
  * @api {post} /api/homes Create a home
@@ -127,7 +137,7 @@ router.get('/:id', function(req, res, next) {
  *          },
  *          "roof": {
  *              "tilt": 10,
- *              "area": {
+ *              "usableArea": {
  *                  "units": "sqft",
  *                  "value": 100
  *              },
@@ -143,8 +153,7 @@ router.post('/', function(req, res, next) {
 
     var requiredParams = ['lat', 'lon', 'energy', 'roof'];
 
-    var i = 0;
-    for (; i < requiredParams.length; i++) {
+    for (var i = 0; i < requiredParams.length; i++) {
         if (!req.body.hasOwnProperty(requiredParams[i])) {
             res.status(400).json({error: 'Invalid request'});
             return;
@@ -163,7 +172,7 @@ router.post('/', function(req, res, next) {
             });
             return newHome.save();
         } else {
-            /* throw new Error('Duplicate home attempted creation'); */
+            // Return the existing home document
             return home;
         }
     }).then(function(home) {
@@ -216,9 +225,9 @@ router.put('/:id', function(req, res, next) {
         if (home == null) {
             throw new NullDocumentError('Home not found');
         }
-        for (var key in params) {
-            if (req.body.hasOwnProperty(key)) {
-                home.key = req.body.key;
+        for (var i = 0; i < params.length; i++) {
+            if (req.body.hasOwnProperty(params[i])) {
+                home.params[i] = req.body.params[i];
             }
         }
         return home.save()
@@ -295,9 +304,9 @@ router.get('/wattvision/:id', function(req, res, next) {
         if (home == null) {
             throw new NullDocumentError('Home not found');
         }
-        for (var key in params) {
-            if (req.query.hasOwnProperty(key)) {
-                home.energy.wattvision.key = req.query.key;
+        for (var i = 0; i < params.length; i++) {
+            if (req.query.hasOwnProperty(params[i])) {
+                home.energy.wattvision.params[i] = req.query.params[i];
             }
         }
         return home.save()

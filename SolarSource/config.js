@@ -11,11 +11,22 @@ module.exports.nrel = {
         username: 'gturk',
         password: 'y5a24Nj9hb7h63fXt',
         siteIds: [1234, 1236]
-    }
+    },
+    pvwatts5: {
+        moduleType: 0,
+        losses: 10
+    },
+    arrayType: 1,
+    tilt: 30,
+    azimuth: 180
 };
 
 module.exports.mongodb = {
     server_path: 'mongodb://127.0.0.1:27017/prod'
+};
+
+module.exports.solarcast = {
+    api_key: '55CHNRWQDY'
 };
 
 module.exports.flags = {
@@ -25,8 +36,9 @@ module.exports.flags = {
     average: 100,
     startFromCapacity: false,
     threshold: .05,
-    inflation: 1.03,
-    apr: .05
+    priceIncrease: 1,
+    annualInterest :.08,
+    loanYears: 20
 };
 
 module.exports.enphase = {

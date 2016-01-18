@@ -4,11 +4,14 @@
 
 var mongoose = require('mongoose');
 
+var financeOptions = 'loan lease buy'.split(' ');
+
 var homeSchema = mongoose.Schema({
     lat: Number,
     lon: Number,
     energy: {},
     roof: {},
+    financeType: {type: String, enum: financeOptions},
     recommendation: {
         arraySize: Number,
         exceedsMaxSize: Boolean,

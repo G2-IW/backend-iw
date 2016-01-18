@@ -68,14 +68,9 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     var requiredParams = ['user_id', 'first_name', 'last_name'];
-    /*_.each(requiredParams, function(element, index, list) {
-        if (!req.body.hasOwnProperty(element)) {
-            res.status(400).json({error: 'Invalid request'});
-        }
-    });*/
 
     // Check that all required parameters exist
-    for (; i < requiredParams.length; i++) {
+    for (var i = 0; i < requiredParams.length; i++) {
         if (!req.body.hasOwnProperty(requiredParams[i])) {
             res.status(400).json({error: 'Invalid request'});
             return;
@@ -117,9 +112,9 @@ router.put('/:user_id', function(req, res, next) {
         if (user == null) {
             throw new NullDocumentError('User not found');
         }
-        for (var key in params) {
-            if (req.body.hasOwnProperty(key)) {
-                user.key = req.body.key;
+        for (var i = 0; i < params.length; i++) {
+            if (req.body.hasOwnProperty(params[i])) {
+                user.params[i] = req.body.params[i];
             }
         }
         return user.save();

@@ -25,7 +25,7 @@ function getOpenPVSummariesDefault() {
     return request.get(endpoint + '/api/solar/open_pv/installs/summaries')
         .query({
             api_key: api_key,
-            state: 'CA'
+            state: 'NJ'
         })
         .accept('json')
         .promise();
@@ -36,7 +36,7 @@ function getPVWatts(capacity, arrayType, tiltAngle, azimuthAngle, lat, lon) {
         .query({
             api_key: api_key,
             system_capacity: capacity,
-            module_type: 1,
+            module_type: 0,
             losses: 10,
             array_type: arrayType,
             tilt: tiltAngle,
@@ -48,7 +48,7 @@ function getPVWatts(capacity, arrayType, tiltAngle, azimuthAngle, lat, lon) {
         .promise();
 }
 
-function getSolarResouceData(lat, lon) {
+function getSolarResourceData(lat, lon) {
     return request.get(endpoint + '/api/solar/solar_resource/v1.json')
         .query({
             api_key: api_key,
@@ -70,19 +70,20 @@ function getUtilityRates(lat, lon) {
         .promise();
 }
 
-function getPVDAQMetadata() {
+function getPVDAQMetadata(system_id) {
     // returns metadata for all PVDAQ sites
     return request.get(endpoint + '/api/pvdaq/v3/sites.json')
         .auth(config.nrel.pvdaq.username, config.nrel.pvdaq.password)
         .query({
-            api_key: api_key
+            api_key: api_key,
+            system_id: system_id
         })
         .accept('json')
         .promise();
 }
 
 function getPVDAQSiteData(system_id) {
-    return request.get(endpoint + '/api/pvdaq/v3/site_data.format')
+    return request.get(endpoint + '/api/pvdaq/v3/site_data.json')
         .auth(config.nrel.pvdaq.username, config.nrel.pvdaq.password)
         .query({
             api_key: api_key,
@@ -98,8 +99,7 @@ function getPVDAQSiteData(system_id) {
 module.exports.getSummaries = getOpenPVSummaries;
 module.exports.getSummariesDefault = getOpenPVSummariesDefault;
 module.exports.getPVWatts = getPVWatts;
-module.exports.getSolarResourceData = getSolarResouceData;
+module.exports.getSolarResourceData = getSolarResourceData;
 module.exports.getUtilityRates = getUtilityRates;
-module.exports.getResourceNoPromise = getResourceNoPromise;
 module.exports.getPVDAQMetadata = getPVDAQMetadata;
 module.exports.getPVDAQSiteData = getPVDAQSiteData;

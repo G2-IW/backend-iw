@@ -83,6 +83,12 @@ router.get('/:id', function(req, res, next) {
             throw new NullDocumentError('Home does not exist');
         }
 
+        /* TODO: Check if recommendation is already there */
+        if (Object.keys(home.recommendation).length != 0) {
+            //res.status(200).json(home.recommendation);
+            //return;
+        }
+
         this.home = home;
 
         if (home.energy.useWattvision) {
@@ -97,22 +103,18 @@ router.get('/:id', function(req, res, next) {
     }).then(function (wattvisionData) {
 
         // wattvision data may be null
-        this.homeEnergyModel = new HomeEnergyModel(this.home.energy, wattvisionData.data);
+        var argData = wattvisionData ? wattvisionData.data : null;
+        this.homeEnergyModel = new HomeEnergyModel(this.home.energy, argData);
         this.homeRoofModel = new HomeRoofModel(this.home.roof);
 
         this.roofProfile = this.homeRoofModel.getRoofProfile();
         this.energyProfile = this.homeEnergyModel.getEnergyProfile();
 
-        return nrel.getSolarResourceData(this.home.lat, this.home.lon)
+        return nrel.getSolarResourceData(this.home.lat, this.home.lon);
 
     }).then(function(resource) {
         this.solarResourceData = resource.body.outputs;
 
-        return nrel.getPVWatts(this.energyProfile.systemCapacity, this.roofProfile.arrayType, this.roofProfile.tilt,
-            this.roofProfile.azimuth, this.home.lat, this.home.lon);
-
-    }).then(function(resource) {
-        this.solarPerformance = resource.body.outputs;
         return helper.getZipCode(this.home.lat, this.home.lon);
 
     }).then(function(zipcode) {
@@ -124,7 +126,7 @@ router.get('/:id', function(req, res, next) {
             return nrel.getSummariesDefault();
         }
         // TODO: figure out if need promise here
-        return summaries;
+        return bluebird.resolve(summaries);
 
     }).then(function(summaries) {
         this.solarLandscape = summaries.body.result;
@@ -132,22 +134,30 @@ router.get('/:id', function(req, res, next) {
 
     }).then(function(rates) {
         this.utilityRates = rates.body.outputs;
-        return nrel.getPVDAQMetadata();
+
+        // TODO: change to closest station via GPS
+        return nrel.getPVDAQMetadata(config.nrel.pvdaq.siteIds[0]);
 
     }).then(function (pvdaqMetadata) {
+       //  console.log(pvdaqMetadata.body.outputs);
+        this.pvdaqMetadata = [];
+        this.pvdaqMetadata[0] = pvdaqMetadata.body.outputs[0];
+        return nrel.getPVDAQMetadata(config.nrel.pvdaq.siteIds[1]);
 
-        var filteredOutputs = _.filter(pvdaqMetadata.body.outputs, function (site) {
-            return site.system_id == config.nrel.pvdaq.siteIds[0] ||
-                site.system_id == config.nrel.pvdaq.siteIds[1]
-        });
+    }).then(function(pvdaqMetadata) {
+       // console.log(pvdaqMetadata.body.outputs);
 
-        this.pvdaqMetadata = filteredOutputs;
+        this.pvdaqMetadata[1] = pvdaqMetadata.body.outputs[0];
 
-        this.pvdaqSiteData = [];
+        console.log('META0:' + this.pvdaqMetadata[0]);
+        console.log('META1:' + this.pvdaqMetadata[1]);
+
         return nrel.getPVDAQSiteData(config.nrel.pvdaq.siteIds[0]);
 
     }).then(function(pvdaqSiteData) {
         var dataEntries = _.size(pvdaqSiteData.body.outputs);
+
+        this.pvdaqSiteData = [];
         this.pvdaqSiteData[0] = pvdaqSiteData.body.outputs.slice(1, dataEntries - 1);
 
         return nrel.getPVDAQSiteData(config.nrel.pvdaq.siteIds[1]);
@@ -157,13 +167,26 @@ router.get('/:id', function(req, res, next) {
         this.pvdaqSiteData[1] = pvdaqSiteData.body.outputs.slice(1, dataEntries - 1);
 
         recommendationEngine = new RecommendationEngine(this.home, this.solarLandscape, this.solarResourceData,
-            this.solarPerformance, this.utilityRates, this.pvdaqMetadata, this.pvdaqSiteData, this.energyProfile, this.roofProfile);
+            this.utilityRates, this.pvdaqMetadata, this.pvdaqSiteData, this.energyProfile, this.roofProfile);
 
-        this.recommendation = recommendationEngine.getRecommendation();
-        for (var key in this.recommendation) {
-            if (this.recommendation.hasOwnProperty(key) &&
+        this.recommendation = {};
+        this.recommendation.units = {
+            exceedsMaxSize: 'boolean',
+            coverage: 'percent',
+            arraySize: 'square meters',
+            arrayCapacity: 'kilowatts',
+            arrayCost: 'USD',
+            monthlyPayment: 'USD',
+            twentyYearUtilityCost: 'USD',
+            twentyYearSavings: 'USD',
+            averageAnnualSavings: 'USD'
+        };
+        this.recommendation.values = recommendationEngine.getRecommendation();
+
+        for (var key in this.recommendation.values) {
+            if (this.recommendation.values.hasOwnProperty(key) &&
                 this.home.recommendation.hasOwnProperty(key)) {
-                this.home.recommendation.key = this.recommendation.key;
+                this.home.recommendation.key = this.recommendation.values.key;
             }
         }
 

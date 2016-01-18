@@ -15,15 +15,15 @@
       "units": "years",
       "value": "10"
     },
-    "paymentPerMonth": 100
   },
+  "financeType": "loan",
   "roof": {
-    "tilt": 40,
-    "area": {
+    "tilt": 30.5,
+    "usableArea": {
       "units": "sqft",
       "value": 100
     },
-    "direction": 0,
+    "direction": 259,
     "elevation": {
       "units": "ft",
       "value": 20
